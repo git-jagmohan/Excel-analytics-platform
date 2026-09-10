@@ -1,66 +1,120 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios'; // ❌ removed custom instance
+import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 
 const Register = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: ''
+  });
+
   const [error, setError] = useState('');
 
-  const handleChange = e => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
   };
 
-  const handleSubmit = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    try {
-      axios.post(
-  'https://excel-analytics-platform-91my.onrender.com/api/auth/register',
-  ...
-); // ✅ localhost path
 
-      localStorage.setItem('token', res.data.token);
+    try {
+      const res = await axios.post(
+        'https://excel-analytics-platform-91my.onrender.com/api/auth/register',
+        formData
+      );
+
+      console.log('Registration successful:', res.data);
+
+      if (res.data.token) {
+        localStorage.setItem('token', res.data.token);
+      }
+
       navigate('/dashboard');
+
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.response?.data?.message || 'Registration failed');
+
+      setError(
+        err.response?.data?.message ||
+        'Registration failed'
+      );
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <form className="bg-white p-8 rounded shadow-md w-96" onSubmit={handleSubmit}>
-        <h2 className="text-2xl font-bold mb-4">📝 Register</h2>
-        {error && <p className="text-red-500 mb-2">{error}</p>}
+
+      <form
+        className="bg-white p-8 rounded shadow-md w-96"
+        onSubmit={handleSubmit}
+      >
+
+        <h2 className="text-2xl font-bold mb-4">
+          📝 Register
+        </h2>
+
+        {error && (
+          <p className="text-red-500 mb-2">
+            {error}
+          </p>
+        )}
+
         <input
           type="text"
           name="name"
           placeholder="Name"
+          value={formData.name}
           onChange={handleChange}
+          required
           className="w-full mb-2 px-4 py-2 border rounded"
         />
+
         <input
           type="email"
           name="email"
           placeholder="Email"
+          value={formData.email}
           onChange={handleChange}
+          required
           className="w-full mb-2 px-4 py-2 border rounded"
         />
+
         <input
           type="password"
           name="password"
           placeholder="Password"
+          value={formData.password}
           onChange={handleChange}
+          required
           className="w-full mb-4 px-4 py-2 border rounded"
         />
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+        >
           Register
         </button>
+
         <p className="mt-2 text-sm">
-          Already have an account? <a href="/login" className="text-blue-500 underline">Login</a>
+          Already have an account?{' '}
+          <Link
+            to="/login"
+            className="text-blue-500 underline"
+          >
+            Login
+          </Link>
         </p>
+
       </form>
+
     </div>
   );
 };
