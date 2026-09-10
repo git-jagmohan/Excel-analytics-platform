@@ -1,0 +1,27 @@
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables — IMPORTANT
+.env
+.env.*
+**/.env
+**/.env.*
+
+# React build
+build/
+**/build/
+
+# Other build output
+dist/
+**/dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
