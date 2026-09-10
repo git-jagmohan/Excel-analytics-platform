@@ -19,7 +19,8 @@ app.use(cors({
   origin: [
     'http://localhost:3000',
     'https://excel-analytics-platform-jagmohan.vercel.app',
-    'https://excel-analytics-platform-rho-cyan.vercel.app'
+    'https://excel-analytics-platform-rho-cyan.vercel.app',
+    'https://excel-analytics-platform-git-main-jagmohan.vercel.app'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
