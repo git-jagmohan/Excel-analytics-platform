@@ -15,7 +15,10 @@ const Register = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', formData); // ✅ localhost path
+      axios.post(
+  'https://excel-analytics-platform-91my.onrender.com/api/auth/register',
+  ...
+); // ✅ localhost path
 
       localStorage.setItem('token', res.data.token);
       navigate('/dashboard');

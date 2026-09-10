@@ -16,7 +16,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData); // ✅ full local URL
+      const res = await axios.post('https://excel-analytics-platform-91my.onrender.com/api/auth/login', formData); // ✅ full local URL
       const { token, role } = res.data;
 
       localStorage.setItem('token', token);

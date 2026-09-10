@@ -18,7 +18,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://excel-analytics-platform-rho-cyan.vercel.app'
+    'https://excel-analytics-platform-rho-cyan.vercel.app',
+    'https://excel-analytics-platform-jagmohan.vercel.app'
   ],
   credentials: true
 }));
