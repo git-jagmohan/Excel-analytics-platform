@@ -16,7 +16,7 @@ const Dashboard = () => {
   const [chartType, setChartType] = useState('bar');
   const [userEmail, setUserEmail] = useState('');
 
-  const BASE_URL = 'http://localhost:5000';
+  const BASE_URL = 'https://excel-analytics-platform-91my.onrender.com';
 
   // =========================
   // CHECK LOGIN
