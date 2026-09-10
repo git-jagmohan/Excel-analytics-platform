@@ -17,7 +17,9 @@ const PORT = process.env.PORT || 5000;
 // ✅ Allow both local and Netlify frontend origins
 app.use(cors({
   origin: [
-    'http://localhost:3000', ],
+    'http://localhost:3000',
+    'https://excel-analytics-platform-rho-cyan.vercel.app'
+  ],
   credentials: true
 }));
 
