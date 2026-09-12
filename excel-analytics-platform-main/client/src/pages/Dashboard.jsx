@@ -1,21 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode';
+
 import ExcelBarChart from '../components/ExcelBarChart';
 import ExcelPieChart from '../components/ExcelPieChart';
-import { jwtDecode } from 'jwt-decode';
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  // =========================
+  // STATES
+  // =========================
+
   const [file, setFile] = useState(null);
   const [excelData, setExcelData] = useState([]);
   const [headers, setHeaders] = useState([]);
+
   const [xAxis, setXAxis] = useState('');
   const [yAxis, setYAxis] = useState('');
+
   const [chartType, setChartType] = useState('bar');
+
   const [userEmail, setUserEmail] = useState('');
- 
+
+  const [saving, setSaving] = useState(false);
 
   const BASE_URL =
     'https://excel-analytics-platform-9lmy.onrender.com';
@@ -23,6 +32,7 @@ const Dashboard = () => {
   // =========================
   // CHECK LOGIN
   // =========================
+
   useEffect(() => {
     const token = localStorage.getItem('token');
 
@@ -33,11 +43,14 @@ const Dashboard = () => {
 
     try {
       const decoded = jwtDecode(token);
+
       setUserEmail(decoded.email || 'User');
     } catch (err) {
       console.error('Invalid token:', err);
+
       localStorage.removeItem('token');
       localStorage.removeItem('role');
+
       navigate('/login');
     }
   }, [navigate]);
@@ -45,9 +58,14 @@ const Dashboard = () => {
   // =========================
   // FETCH EXCEL DATA
   // =========================
+
   const fetchExcelData = async () => {
     try {
       const token = localStorage.getItem('token');
+
+      if (!token) {
+        return;
+      }
 
       const res = await axios.get(
         `${BASE_URL}/api/excel/data`,
@@ -57,6 +75,14 @@ const Dashboard = () => {
           },
         }
       );
+
+      console.log('Backend response:', res.data);
+
+      // Backend stores every Excel row inside:
+      // {
+      //    user: "...",
+      //    data: { Month: "...", Sales: ... }
+      // }
 
       const rows = Array.isArray(res.data)
         ? res.data
@@ -69,15 +95,23 @@ const Dashboard = () => {
             )
         : [];
 
+      console.log('Excel rows:', rows);
+
       setExcelData(rows);
+
+      // =========================
+      // SET CHART HEADERS
+      // =========================
 
       if (rows.length > 0) {
         const keys = Object.keys(rows[0]);
 
         setHeaders(keys);
+
+        // Default X-axis
         setXAxis(keys[0]);
 
-        // Find first numeric column for Y axis
+        // Try finding numeric column
         const numericKey = keys.find((key) => {
           const value = rows[0][key];
 
@@ -88,7 +122,11 @@ const Dashboard = () => {
           );
         });
 
-        setYAxis(numericKey || keys[1] || keys[0]);
+        setYAxis(
+          numericKey ||
+          keys[1] ||
+          keys[0]
+        );
       } else {
         setHeaders([]);
         setXAxis('');
@@ -103,8 +141,9 @@ const Dashboard = () => {
   };
 
   // =========================
-  // FETCH DATA ON PAGE LOAD
+  // LOAD DATA ON PAGE OPEN
   // =========================
+
   useEffect(() => {
     fetchExcelData();
   }, []);
@@ -112,13 +151,15 @@ const Dashboard = () => {
   // =========================
   // UPLOAD EXCEL
   // =========================
+
   const handleUpload = async () => {
     if (!file) {
-      alert('Please select an Excel file');
+      alert('Please select an Excel file.');
       return;
     }
 
     const formData = new FormData();
+
     formData.append('file', file);
 
     try {
@@ -137,6 +178,7 @@ const Dashboard = () => {
       alert('File uploaded successfully!');
 
       await fetchExcelData();
+
       setFile(null);
     } catch (err) {
       console.error(
@@ -144,19 +186,17 @@ const Dashboard = () => {
         err.response?.data || err.message
       );
 
-      alert(
-        err.response?.data?.msg ||
-        'File upload failed.'
-      );
+      alert('File upload failed.');
     }
   };
 
   // =========================
-  // DELETE RECORDS
+  // DELETE EXCEL RECORDS
   // =========================
+
   const handleDelete = async () => {
     const confirmDelete = window.confirm(
-      'Are you sure you want to delete your records?'
+      'Are you sure you want to delete your Excel records?'
     );
 
     if (!confirmDelete) {
@@ -194,119 +234,157 @@ const Dashboard = () => {
   // =========================
   // SAVE ANALYSIS
   // =========================
+
   const handleSaveAnalysis = async () => {
-  const analysisName = window.prompt('Enter a name for this analysis:');
+    if (
+      !xAxis ||
+      !yAxis ||
+      excelData.length === 0
+    ) {
+      alert(
+        'Please upload data and select X/Y axes first.'
+      );
 
-  if (!analysisName) {
-    return;
-  }
+      return;
+    }
 
-  if (!xAxis || !yAxis || excelData.length === 0) {
-    alert('Please select chart data first.');
-    return;
-  }
+    const analysisName = window.prompt(
+      'Enter a name for this analysis:'
+    );
 
-  try {
-    const token = localStorage.getItem('token');
+    if (!analysisName) {
+      return;
+    }
 
-    await axios.post(
-      `${BASE_URL}/api/excel/save-analysis`,
-      {
-        name: analysisName,
-        xAxis,
-        yAxis,
-        chartType,
-        chartData: excelData
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
+    try {
+      setSaving(true);
+
+      const token = localStorage.getItem('token');
+
+      await axios.post(
+        `${BASE_URL}/api/excel/save-analysis`,
+        {
+          name: analysisName,
+          xAxis: xAxis,
+          yAxis: yAxis,
+          chartType: chartType,
+
+          // IMPORTANT:
+          // saves actual Excel rows with analysis
+          chartData: excelData,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    alert('Analysis saved successfully!');
+      alert('Analysis saved successfully!');
+    } catch (err) {
+      console.error(
+        'Save analysis error:',
+        err.response?.data || err.message
+      );
 
-  } catch (err) {
-    console.error(
-      'Save analysis error:',
-      err.response?.data || err.message
-    );
+      alert(
+        err.response?.data?.msg ||
+          'Failed to save analysis.'
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    alert('Failed to save analysis.');
-  }
-};
   // =========================
   // LOGOUT
   // =========================
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+
     navigate('/login');
   };
+
+  // =========================
+  // PAGE
+  // =========================
 
   return (
     <div className="flex min-h-screen bg-gray-100">
 
-      {/* SIDEBAR */}
+      {/* =========================
+          SIDEBAR
+      ========================= */}
+
       <aside className="w-64 bg-white shadow-md p-6">
 
         <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
           📊 Excel Analytics
         </h2>
 
-        <nav className="flex flex-col gap-3">
+        <nav className="flex flex-col gap-4">
 
           <Link
             to="/dashboard"
-            className="bg-blue-500 text-white px-4 py-2 rounded text-left"
+            className="bg-blue-500 text-white px-4 py-2 rounded"
           >
             Dashboard
           </Link>
 
           <Link
             to="/upload"
-            className="text-left text-gray-700 hover:text-blue-600"
+            className="text-gray-700 hover:text-blue-600"
           >
             Upload File
           </Link>
 
           <Link
             to="/files"
-            className="text-left text-gray-700 hover:text-blue-600"
+            className="text-gray-700 hover:text-blue-600"
           >
             My Files
           </Link>
 
           <Link
             to="/saved"
-            className="text-left text-gray-700 hover:text-blue-600"
+            className="text-gray-700 hover:text-blue-600"
           >
             Saved Analyses
           </Link>
 
           <Link
             to="/profile"
-            className="text-left text-gray-700 hover:text-blue-600"
+            className="text-gray-700 hover:text-blue-600"
           >
             Profile
           </Link>
 
         </nav>
+
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* =========================
+          MAIN CONTENT
+      ========================= */}
+
       <main className="flex-1 p-6">
 
         {/* HEADER */}
+
         <div className="flex justify-between items-center mb-6">
 
           <h1 className="text-2xl font-semibold">
+
             Welcome,{' '}
+
             <span className="text-blue-600">
               {userEmail}
             </span>
+
             !
+
           </h1>
 
           <button
@@ -318,16 +396,19 @@ const Dashboard = () => {
 
         </div>
 
-        {/* SUMMARY */}
+        {/* =========================
+            SUMMARY
+        ========================= */}
+
         <div className="mb-6">
 
-          <h2 className="text-xl font-semibold mb-2">
+          <h2 className="text-xl font-semibold mb-3">
             📋 Quick Summary
           </h2>
 
-          <div className="bg-white p-4 rounded shadow w-48 text-center">
+          <div className="bg-white p-4 rounded shadow w-52 text-center">
 
-            <p className="text-2xl font-bold">
+            <p className="text-3xl font-bold">
               {excelData.length}
             </p>
 
@@ -339,7 +420,10 @@ const Dashboard = () => {
 
         </div>
 
-        {/* FILE UPLOAD */}
+        {/* =========================
+            FILE UPLOAD
+        ========================= */}
+
         <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-center">
 
           <input
@@ -374,13 +458,18 @@ const Dashboard = () => {
 
         </div>
 
-        {/* CHART CONTROLS */}
+        {/* =========================
+            CHART CONTROLS
+        ========================= */}
+
         {headers.length > 0 && (
 
           <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-end">
 
             {/* X AXIS */}
+
             <div>
+
               <label className="block text-sm font-semibold mb-1">
                 X-Axis:
               </label>
@@ -392,19 +481,26 @@ const Dashboard = () => {
                 }
                 className="border p-2 rounded"
               >
+
                 {headers.map((head) => (
+
                   <option
                     key={head}
                     value={head}
                   >
                     {head}
                   </option>
+
                 ))}
+
               </select>
+
             </div>
 
             {/* Y AXIS */}
+
             <div>
+
               <label className="block text-sm font-semibold mb-1">
                 Y-Axis:
               </label>
@@ -416,18 +512,24 @@ const Dashboard = () => {
                 }
                 className="border p-2 rounded"
               >
+
                 {headers.map((head) => (
+
                   <option
                     key={head}
                     value={head}
                   >
                     {head}
                   </option>
+
                 ))}
+
               </select>
+
             </div>
 
-            {/* TOGGLE CHART */}
+            {/* CHART TYPE */}
+
             <button
               onClick={() =>
                 setChartType(
@@ -438,28 +540,37 @@ const Dashboard = () => {
               }
               className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
             >
+
               Toggle Chart (
               {chartType === 'bar'
                 ? 'Pie'
                 : 'Bar'}
               )
+
             </button>
 
             {/* SAVE ANALYSIS */}
+
             <button
               onClick={handleSaveAnalysis}
               disabled={saving}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
             >
+
               {saving
                 ? 'Saving...'
-                : '💾 Save Analysis'}
+                : 'Save Analysis'}
+
             </button>
 
           </div>
+
         )}
 
-        {/* CHART */}
+        {/* =========================
+            CHART
+        ========================= */}
+
         <div className="bg-white p-6 rounded shadow">
 
           {excelData.length > 0 &&
@@ -487,7 +598,7 @@ const Dashboard = () => {
           ) : (
 
             <p className="text-gray-500 text-center">
-              No chart data available.
+              Upload an Excel file to display a chart.
             </p>
 
           )}
