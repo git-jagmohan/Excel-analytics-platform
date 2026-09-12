@@ -5,31 +5,38 @@ const savedAnalysisSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
+      required: true,
     },
 
     name: {
       type: String,
-      default: 'My Analysis'
+      required: true,
     },
 
     xAxis: {
       type: String,
-      required: true
+      required: true,
     },
 
     yAxis: {
       type: String,
-      required: true
+      required: true,
     },
 
     chartType: {
       type: String,
-      required: true
-    }
+      enum: ['bar', 'pie'],
+      required: true,
+    },
+
+    // Save the actual Excel rows used by the chart
+    chartData: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: [],
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

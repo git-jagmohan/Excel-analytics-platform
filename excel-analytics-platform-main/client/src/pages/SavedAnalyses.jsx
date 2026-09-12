@@ -3,6 +3,9 @@ import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 import { Link, useNavigate } from 'react-router-dom';
 
+import ExcelBarChart from '../components/ExcelBarChart';
+import ExcelPieChart from '../components/ExcelPieChart';
+
 const SavedAnalyses = () => {
   const navigate = useNavigate();
 
@@ -15,7 +18,7 @@ const SavedAnalyses = () => {
     'https://excel-analytics-platform-9lmy.onrender.com';
 
   // =========================
-  // CHECK USER
+  // CHECK LOGIN
   // =========================
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -27,18 +30,27 @@ const SavedAnalyses = () => {
 
     try {
       const decoded = jwtDecode(token);
-      setUserEmail(decoded.email || 'User');
+
+      setUserEmail(
+        decoded.email || 'User'
+      );
+
     } catch (err) {
-      console.error('Invalid token:', err);
+      console.error(
+        'Invalid token:',
+        err
+      );
 
       localStorage.removeItem('token');
       localStorage.removeItem('role');
 
       navigate('/login');
+
       return;
     }
 
     fetchAnalyses();
+
   }, [navigate]);
 
   // =========================
@@ -49,7 +61,8 @@ const SavedAnalyses = () => {
       setLoading(true);
       setError('');
 
-      const token = localStorage.getItem('token');
+      const token =
+        localStorage.getItem('token');
 
       const res = await axios.get(
         `${BASE_URL}/api/excel/saved-analyses`,
@@ -60,19 +73,27 @@ const SavedAnalyses = () => {
         }
       );
 
+      console.log(
+        'Saved analyses:',
+        res.data
+      );
+
       setAnalyses(
-        Array.isArray(res.data) ? res.data : []
+        Array.isArray(res.data)
+          ? res.data
+          : []
       );
 
     } catch (err) {
       console.error(
         'Failed to fetch saved analyses:',
-        err.response?.data || err.message
+        err.response?.data ||
+          err.message
       );
 
       setError(
         err.response?.data?.msg ||
-        'Failed to load saved analyses.'
+          'Failed to load saved analyses.'
       );
 
     } finally {
@@ -80,16 +101,28 @@ const SavedAnalyses = () => {
     }
   };
 
+  // =========================
+  // PAGE
+  // =========================
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
 
       <div className="flex justify-between items-center mb-6">
 
-        <h1 className="text-2xl font-bold">
-          📁 Saved Analyses
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold">
+            📁 Saved Analyses
+          </h1>
+
+          <p className="text-gray-600 mt-1">
+            Saved analyses for{' '}
+            <span className="font-semibold text-blue-600">
+              {userEmail}
+            </span>
+          </p>
+        </div>
 
         <Link
           to="/dashboard"
@@ -100,24 +133,17 @@ const SavedAnalyses = () => {
 
       </div>
 
-      {/* USER */}
-
-      <p className="text-gray-600 mb-6">
-        Saved analyses for{' '}
-        <span className="font-semibold text-blue-600">
-          {userEmail}
-        </span>
-      </p>
-
-      {/* LOADING */}
+      {/* ================= LOADING ================= */}
 
       {loading && (
-        <p className="text-gray-600">
-          Loading saved analyses...
-        </p>
+        <div className="bg-white p-6 rounded shadow">
+          <p className="text-gray-600">
+            Loading saved analyses...
+          </p>
+        </div>
       )}
 
-      {/* ERROR */}
+      {/* ================= ERROR ================= */}
 
       {!loading && error && (
         <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
@@ -125,72 +151,185 @@ const SavedAnalyses = () => {
         </div>
       )}
 
-      {/* NO ANALYSES */}
+      {/* ================= EMPTY ================= */}
 
       {!loading &&
         !error &&
         analyses.length === 0 && (
+
           <div className="bg-white p-6 rounded shadow">
+
             <p className="text-gray-600">
               No saved analyses found.
             </p>
 
             <p className="text-sm text-gray-400 mt-2">
-              Create a chart on the Dashboard and
-              click "Save Analysis".
+              Create a chart on the Dashboard
+              and click "Save Analysis".
             </p>
+
           </div>
+
         )}
 
-      {/* SAVED ANALYSES */}
+      {/* ================= ANALYSES ================= */}
 
       {!loading &&
         !error &&
         analyses.length > 0 && (
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-6">
 
-            {analyses.map((analysis, index) => (
+            {analyses.map(
+              (analysis, index) => (
 
-              <div
-                key={analysis._id || index}
-                className="bg-white p-5 rounded shadow"
-              >
+                <div
+                  key={
+                    analysis._id ||
+                    index
+                  }
+                  className="bg-white p-6 rounded shadow"
+                >
 
-                <h2 className="text-lg font-semibold mb-3 text-blue-700">
-                  {analysis.name ||
-                    `Analysis #${index + 1}`}
-                </h2>
+                  {/* ANALYSIS NAME */}
 
-                <p className="mb-1">
-                  <strong>X-Axis:</strong>{' '}
-                  {analysis.xAxis}
-                </p>
+                  <h2 className="text-xl font-semibold mb-4 text-blue-700">
+                    {analysis.name ||
+                      `Analysis #${index + 1}`}
+                  </h2>
 
-                <p className="mb-1">
-                  <strong>Y-Axis:</strong>{' '}
-                  {analysis.yAxis}
-                </p>
+                  {/* ANALYSIS INFORMATION */}
 
-                <p className="mb-1">
-                  <strong>Chart Type:</strong>{' '}
-                  {analysis.chartType}
-                </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
 
-                {analysis.createdAt && (
-                  <p className="text-sm text-gray-400 mt-3">
-                    Saved:{' '}
-                    {new Date(
-                      analysis.createdAt
-                    ).toLocaleString()}
-                  </p>
-                )}
+                    <div className="bg-gray-50 p-3 rounded">
 
-              </div>
+                      <p className="text-sm text-gray-500">
+                        X-Axis
+                      </p>
 
-            ))}
+                      <p className="font-semibold">
+                        {analysis.xAxis}
+                      </p>
+
+                    </div>
+
+                    <div className="bg-gray-50 p-3 rounded">
+
+                      <p className="text-sm text-gray-500">
+                        Y-Axis
+                      </p>
+
+                      <p className="font-semibold">
+                        {analysis.yAxis}
+                      </p>
+
+                    </div>
+
+                    <div className="bg-gray-50 p-3 rounded">
+
+                      <p className="text-sm text-gray-500">
+                        Chart Type
+                      </p>
+
+                      <p className="font-semibold capitalize">
+                        {analysis.chartType}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  {/* ================= SAVED CHART ================= */}
+
+                  <div className="border rounded p-4">
+
+                    <h3 className="font-semibold mb-4">
+                      📊 Chart
+                    </h3>
+
+                    {analysis.chartData &&
+                    analysis.chartData.length > 0 ? (
+
+                      <div className="w-full">
+
+                        {analysis.chartType ===
+                        'bar' ? (
+
+                          <ExcelBarChart
+                            chartData={
+                              analysis.chartData
+                            }
+                            xAxis={
+                              analysis.xAxis
+                            }
+                            yAxis={
+                              analysis.yAxis
+                            }
+                          />
+
+                        ) : (
+
+                          <ExcelPieChart
+                            chartData={
+                              analysis.chartData
+                            }
+                            xAxis={
+                              analysis.xAxis
+                            }
+                            yAxis={
+                              analysis.yAxis
+                            }
+                          />
+
+                        )}
+
+                      </div>
+
+                    ) : (
+
+                      <div className="bg-yellow-50 p-4 rounded">
+
+                        <p className="text-yellow-700 text-sm">
+                          No chart data was saved
+                          with this analysis.
+                        </p>
+
+                        <p className="text-gray-500 text-sm mt-1">
+                          This analysis may have
+                          been created before chart
+                          data saving was added.
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </div>
+
+                  {/* ================= DATE ================= */}
+
+                  {analysis.createdAt && (
+
+                    <p className="text-sm text-gray-400 mt-4">
+
+                      Saved:{' '}
+
+                      {new Date(
+                        analysis.createdAt
+                      ).toLocaleString()}
+
+                    </p>
+
+                  )}
+
+                </div>
+
+              )
+            )}
 
           </div>
+
         )}
 
     </div>

@@ -216,14 +216,13 @@ const Dashboard = () => {
 
       await axios.post(
         `${BASE_URL}/api/excel/save-analysis`,
-        {
-          name:
-            analysisName.trim() ||
-            `${yAxis} by ${xAxis}`,
-          xAxis,
-          yAxis,
-          chartType,
-        },
+       {
+  name,
+  xAxis,
+  yAxis,
+  chartType,
+  chartData: excelData
+},
         {
           headers: {
             Authorization: `Bearer ${token}`,

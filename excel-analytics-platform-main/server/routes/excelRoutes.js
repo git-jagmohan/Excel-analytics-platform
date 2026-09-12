@@ -146,55 +146,47 @@ router.delete(
 // =========================
 // SAVE ANALYSIS
 // =========================
+router.post('/save-analysis', authMiddleware, async (req, res) => {
+  try {
+    const {
+      name,
+      xAxis,
+      yAxis,
+      chartType,
+      chartData
+    } = req.body;
 
-router.post(
-  '/save-analysis',
-  authMiddleware,
-  async (req, res) => {
-    try {
-      const {
-        name,
-        xAxis,
-        yAxis,
-        chartType
-      } = req.body;
-
-      if (!xAxis || !yAxis || !chartType) {
-        return res.status(400).json({
-          msg: 'xAxis, yAxis and chartType are required'
-        });
-      }
-
-      const analysis = await SavedAnalysis.create({
-        user: req.user.id,
-        name: name || 'My Analysis',
-        xAxis,
-        yAxis,
-        chartType
-      });
-
-      console.log(
-        `✅ Analysis saved for user ${req.user.id}`
-      );
-
-      res.status(201).json({
-        msg: 'Analysis saved successfully',
-        analysis
-      });
-
-    } catch (err) {
-      console.error(
-        '❌ Save analysis error:',
-        err
-      );
-
-      res.status(500).json({
-        msg: 'Failed to save analysis',
-        error: err.message
+    if (!name || !xAxis || !yAxis || !chartType) {
+      return res.status(400).json({
+        msg: 'Missing required analysis information'
       });
     }
+
+    const SavedAnalysis = require('../models/SavedAnalysis');
+
+    const analysis = await SavedAnalysis.create({
+      user: req.user.id,
+      name,
+      xAxis,
+      yAxis,
+      chartType,
+      chartData: chartData || []
+    });
+
+    res.status(201).json({
+      msg: 'Analysis saved successfully',
+      analysis
+    });
+
+  } catch (err) {
+    console.error('Save analysis error:', err);
+
+    res.status(500).json({
+      msg: 'Failed to save analysis',
+      error: err.message
+    });
   }
-);
+});
 
 
 // =========================
