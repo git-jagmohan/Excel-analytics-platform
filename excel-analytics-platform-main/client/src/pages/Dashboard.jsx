@@ -15,8 +15,10 @@ const Dashboard = () => {
   const [yAxis, setYAxis] = useState('');
   const [chartType, setChartType] = useState('bar');
   const [userEmail, setUserEmail] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const BASE_URL = 'https://excel-analytics-platform-9lmy.onrender.com';
+  const BASE_URL =
+    'https://excel-analytics-platform-9lmy.onrender.com';
 
   // =========================
   // CHECK LOGIN
@@ -35,6 +37,7 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Invalid token:', err);
       localStorage.removeItem('token');
+      localStorage.removeItem('role');
       navigate('/login');
     }
   }, [navigate]);
@@ -46,28 +49,14 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
 
-      const res = await axios.get(`${BASE_URL}/api/excel/data`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      console.log('Backend response:', res.data);
-
-      /*
-        Backend is returning records similar to:
-
+      const res = await axios.get(
+        `${BASE_URL}/api/excel/data`,
         {
-          data: {
-            Month: "January",
-            Sales: 52000,
-            Expenses: 31000
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-          user: "..."
         }
-
-        We only need the Excel row inside "data".
-      */
+      );
 
       const rows = Array.isArray(res.data)
         ? res.data
@@ -80,19 +69,15 @@ const Dashboard = () => {
             )
         : [];
 
-      console.log('Extracted Excel rows:', rows);
-
       setExcelData(rows);
 
       if (rows.length > 0) {
         const keys = Object.keys(rows[0]);
 
         setHeaders(keys);
-
-        // First column is normally category/text column
         setXAxis(keys[0]);
 
-        // Find first numeric column for Y-axis
+        // Find first numeric column for Y axis
         const numericKey = keys.find((key) => {
           const value = rows[0][key];
 
@@ -118,14 +103,14 @@ const Dashboard = () => {
   };
 
   // =========================
-  // FETCH DATA ON LOAD
+  // FETCH DATA ON PAGE LOAD
   // =========================
   useEffect(() => {
     fetchExcelData();
   }, []);
 
   // =========================
-  // UPLOAD EXCEL FILE
+  // UPLOAD EXCEL
   // =========================
   const handleUpload = async () => {
     if (!file) {
@@ -151,9 +136,7 @@ const Dashboard = () => {
 
       alert('File uploaded successfully!');
 
-      // Refresh chart data
       await fetchExcelData();
-
       setFile(null);
     } catch (err) {
       console.error(
@@ -161,7 +144,10 @@ const Dashboard = () => {
         err.response?.data || err.message
       );
 
-      alert('File upload failed.');
+      alert(
+        err.response?.data?.msg ||
+        'File upload failed.'
+      );
     }
   };
 
@@ -180,11 +166,14 @@ const Dashboard = () => {
     try {
       const token = localStorage.getItem('token');
 
-      await axios.delete(`${BASE_URL}/api/excel/delete`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.delete(
+        `${BASE_URL}/api/excel/delete`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       setExcelData([]);
       setHeaders([]);
@@ -203,18 +192,75 @@ const Dashboard = () => {
   };
 
   // =========================
+  // SAVE ANALYSIS
+  // =========================
+  const handleSaveAnalysis = async () => {
+    if (!xAxis || !yAxis || excelData.length === 0) {
+      alert('Please upload data and select X and Y axes first.');
+      return;
+    }
+
+    const analysisName = window.prompt(
+      'Enter a name for this analysis:',
+      `${yAxis} by ${xAxis}`
+    );
+
+    if (analysisName === null) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const token = localStorage.getItem('token');
+
+      await axios.post(
+        `${BASE_URL}/api/excel/save-analysis`,
+        {
+          name:
+            analysisName.trim() ||
+            `${yAxis} by ${xAxis}`,
+          xAxis,
+          yAxis,
+          chartType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert('Analysis saved successfully!');
+
+    } catch (err) {
+      console.error(
+        'Save analysis error:',
+        err.response?.data || err.message
+      );
+
+      alert(
+        err.response?.data?.msg ||
+        'Could not save analysis.'
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // =========================
   // LOGOUT
   // =========================
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('role');
     navigate('/login');
   };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
 
-      {/* ================= SIDEBAR ================= */}
-
+      {/* SIDEBAR */}
       <aside className="w-64 bg-white shadow-md p-6">
 
         <h2 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
@@ -261,12 +307,10 @@ const Dashboard = () => {
         </nav>
       </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
-
+      {/* MAIN CONTENT */}
       <main className="flex-1 p-6">
 
         {/* HEADER */}
-
         <div className="flex justify-between items-center mb-6">
 
           <h1 className="text-2xl font-semibold">
@@ -286,8 +330,7 @@ const Dashboard = () => {
 
         </div>
 
-        {/* ================= SUMMARY ================= */}
-
+        {/* SUMMARY */}
         <div className="mb-6">
 
           <h2 className="text-xl font-semibold mb-2">
@@ -308,14 +351,15 @@ const Dashboard = () => {
 
         </div>
 
-        {/* ================= FILE UPLOAD ================= */}
-
+        {/* FILE UPLOAD */}
         <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-center">
 
           <input
             type="file"
             accept=".xlsx,.xls"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) =>
+              setFile(e.target.files[0])
+            }
             className="border p-2 rounded"
           />
 
@@ -342,72 +386,60 @@ const Dashboard = () => {
 
         </div>
 
-        {/* ================= CHART CONTROLS ================= */}
-
+        {/* CHART CONTROLS */}
         {headers.length > 0 && (
 
-          <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-center">
+          <div className="bg-white p-4 rounded shadow mb-6 flex flex-wrap gap-4 items-end">
 
             {/* X AXIS */}
-
             <div>
-
               <label className="block text-sm font-semibold mb-1">
                 X-Axis:
               </label>
 
               <select
                 value={xAxis}
-                onChange={(e) => setXAxis(e.target.value)}
+                onChange={(e) =>
+                  setXAxis(e.target.value)
+                }
                 className="border p-2 rounded"
               >
-
                 {headers.map((head) => (
-
                   <option
                     key={head}
                     value={head}
                   >
                     {head}
                   </option>
-
                 ))}
-
               </select>
-
             </div>
 
             {/* Y AXIS */}
-
             <div>
-
               <label className="block text-sm font-semibold mb-1">
                 Y-Axis:
               </label>
 
               <select
                 value={yAxis}
-                onChange={(e) => setYAxis(e.target.value)}
+                onChange={(e) =>
+                  setYAxis(e.target.value)
+                }
                 className="border p-2 rounded"
               >
-
                 {headers.map((head) => (
-
                   <option
                     key={head}
                     value={head}
                   >
                     {head}
                   </option>
-
                 ))}
-
               </select>
-
             </div>
 
-            {/* CHART TYPE */}
-
+            {/* TOGGLE CHART */}
             <button
               onClick={() =>
                 setChartType(
@@ -425,12 +457,21 @@ const Dashboard = () => {
               )
             </button>
 
-          </div>
+            {/* SAVE ANALYSIS */}
+            <button
+              onClick={handleSaveAnalysis}
+              disabled={saving}
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {saving
+                ? 'Saving...'
+                : '💾 Save Analysis'}
+            </button>
 
+          </div>
         )}
 
-        {/* ================= CHART ================= */}
-
+        {/* CHART */}
         <div className="bg-white p-6 rounded shadow">
 
           {excelData.length > 0 &&
