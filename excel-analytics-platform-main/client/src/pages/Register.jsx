@@ -26,7 +26,7 @@ const Register = () => {
 
     try {
       const res = await axios.post(
-        'https://excel-analytics-platform-91my.onrender.com/api/auth/register',
+        'https://excel-analytics-platform-9lmy.onrender.com',
         formData
       );
 
