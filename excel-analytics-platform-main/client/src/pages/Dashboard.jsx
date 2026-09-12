@@ -195,58 +195,47 @@ const Dashboard = () => {
   // SAVE ANALYSIS
   // =========================
   const handleSaveAnalysis = async () => {
-    if (!xAxis || !yAxis || excelData.length === 0) {
-      alert('Please upload data and select X and Y axes first.');
-      return;
-    }
+  const analysisName = window.prompt('Enter a name for this analysis:');
 
-    const analysisName = window.prompt(
-      'Enter a name for this analysis:',
-      `${yAxis} by ${xAxis}`
+  if (!analysisName) {
+    return;
+  }
+
+  if (!xAxis || !yAxis || excelData.length === 0) {
+    alert('Please select chart data first.');
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+
+    await axios.post(
+      `${BASE_URL}/api/excel/save-analysis`,
+      {
+        name: analysisName,
+        xAxis,
+        yAxis,
+        chartType,
+        chartData: excelData
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
     );
 
-    if (analysisName === null) {
-      return;
-    }
+    alert('Analysis saved successfully!');
 
-    try {
-      setSaving(true);
+  } catch (err) {
+    console.error(
+      'Save analysis error:',
+      err.response?.data || err.message
+    );
 
-      const token = localStorage.getItem('token');
-
-      await axios.post(
-        `${BASE_URL}/api/excel/save-analysis`,
-       {
-  name,
-  xAxis,
-  yAxis,
-  chartType,
-  chartData: excelData
-},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      alert('Analysis saved successfully!');
-
-    } catch (err) {
-      console.error(
-        'Save analysis error:',
-        err.response?.data || err.message
-      );
-
-      alert(
-        err.response?.data?.msg ||
-        'Could not save analysis.'
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
-
+    alert('Failed to save analysis.');
+  }
+};
   // =========================
   // LOGOUT
   // =========================
