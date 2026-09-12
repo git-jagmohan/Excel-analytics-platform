@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/auth';
+const API_BASE = 'https://excel-analytics-platform-9lmy.onrender.com/api/auth';
 
 export const registerUser = (formData) =>
   axios.post(`${API_BASE}/register`, formData);

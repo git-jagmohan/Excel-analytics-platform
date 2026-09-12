@@ -9,7 +9,7 @@ const Admin = () => {
     const fetchUsersWithData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/admin/users-with-data', {
+        const res = await axios.get('https://excel-analytics-platform-9lmy.onrender.com/api/admin/users-with-data', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(res.data);

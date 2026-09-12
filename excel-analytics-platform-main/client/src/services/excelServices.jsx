@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api/excel';
+const API_BASE = 'https://excel-analytics-platform-9lmy.onrender.com/api/excel';
 
 export const uploadExcelFile = (file, token) => {
   const formData = new FormData();
